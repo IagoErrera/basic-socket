@@ -6,17 +6,14 @@
 #include <arpa/inet.h> 
 #include <sys/socket.h>
 
+#include "utils/error_msg.h"
+
 #define PORT 18000
 #define MAX_DATA 4096
 #define SOCKET_QUEUE 10
 
-void error_msg(const char* msg) {
-    printf("[ERROR] %s \r\n", msg);
-    exit(1);
-}
-
 int main() {
-    int server_fd, connection_fd, read_bytes;
+    int server_fd, connection_fd, n;
     struct sockaddr_in server_addr;
     uint8_t send_buff[MAX_DATA + 1];
     uint8_t receive_buff[MAX_DATA + 1];
@@ -46,7 +43,7 @@ int main() {
     if (listen_status < 0) error_msg("Set socket to listen error");
 
     inet_ntop(AF_INET, &server_addr, server_addr_string, MAX_DATA);
-    printf("Listenning on %s\r\n", server_addr_string);
+    printf("Listenning on %s\r\n\n", server_addr_string);
     
     fflush(stdout);
 
@@ -55,26 +52,26 @@ int main() {
         struct sockaddr_in connection_addr;
         socklen_t connection_addr_len;
         
-        printf("Waiting connection...");
+        printf("Waiting connection...\r\n");
         fflush(stdout);
         connection_fd = accept(server_fd, (sockaddr *) &connection_addr, &connection_addr_len);
 
         inet_ntop(AF_INET, &connection_addr, connection_addr_string, MAX_DATA);
-        printf("Connected with %s", connection_addr_string);
+        printf("Connected with %s\r\n", connection_addr_string);
         fflush(stdout);
 
         // Receive data from accepted connection
         memset(receive_buff, 0, MAX_DATA);
-        while ((read_bytes = read(connection_fd, receive_buff, MAX_DATA - 1)) > 0) {
-            printf("Received bytes %d \r\n", read_bytes);
+        while ((n = read(connection_fd, receive_buff, MAX_DATA - 1)) > 0) {
+            printf("Received bytes %d \r\n", n);
             printf("Msg: %s", (char*)receive_buff);
 
-            if (receive_buff[read_bytes - 1]  == '\n') break;
+            if (receive_buff[n - 1]  == '\n') break;
         }
 
-        if (read_bytes < 0) error_msg("Read error");
+        if (n < 0) error_msg("Read error");
         
-        snprintf((char*)send_buff, sizeof(send_buff), "HTTP/1.1 200 OK\r\n\r\nHello");
+        snprintf((char*)send_buff, sizeof(send_buff), "HTTP/1.1 200 OK  \r\n\r\nHello");
 
         write(connection_fd, (char*)send_buff, strlen((char*)send_buff));
         close(connection_fd);
